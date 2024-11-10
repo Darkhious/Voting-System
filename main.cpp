@@ -2,6 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -53,7 +54,7 @@ bool isDigit(string value) {
 }
 
 void saveFile(vector<string> voters) {
-    ofstream list_of_voters("list_of_voters.txt");
+    ofstream list_of_voters("list_of_voters.save");
 
     for (string voter : voters) {
         list_of_voters << voter << "\n"; // Inserts each voters' name into a file
@@ -130,7 +131,7 @@ int removeVoter(string indices) {
     isNumber = false;
     if (indices != " ") {
         index = "";
-        for (int i = 0; i < indices.length(); i++) {
+        for (int i = 0; i < indices.length(); i++) { // Compiles the results from a string, and transfers it to a vector for reference
             if (indices[i] != ' ') {
                 index += indices[i];
             } else {
@@ -204,7 +205,7 @@ void database(int action, string name) {
 void loadFile() {
     string name;
 
-    ifstream list_of_voters("list_of_voters.txt");
+    ifstream list_of_voters("list_of_voters.save");
     if (list_of_voters.is_open()) {
         while (getline(list_of_voters, name)) {
             name = toCapital(name);
@@ -244,20 +245,104 @@ void addVoter() {
     }
 }
 
-bool logIn() {
-    string username, password;
+/*
 
-    cout << "Enter username: ";
-    getline(cin, username);
-    cout << "Enter password: ";
-    getline(cin, password);
+FORMULA:
+hashCode = x₁*P⁰ + x₂*Pⁱ + x₃*P² ... xₙ*Pⁿ⁻ⁱ
+
+*/
+int toHash(string key) {
+    const int PRIME_CONST = 31;
+    
+    int hashCode = 0;
+
+    for (int i = 0; i < key.length(); i++) {
+        hashCode += key[i] * pow(PRIME_CONST, i);
+    }
+
+    return hashCode;
+}
+
+bool logIn() {
+    string username, password, key;
+
+    while (true) {
+        cout << "Enter username: ";
+        getline(cin, username);
+        cout << "Enter password: ";
+        getline(cin, password);
+
+        password = to_string(toHash(password));
+
+        ifstream adminFile(username + ".save");
+        if (!adminFile.is_open()) {
+            cout << "\nERROR: Username or password is wrong!\n";
+        } else {
+            getline(adminFile, key);
+            
+            if (password == key) {
+                return true;
+            } else {
+                cout << "\nERROR: Username or password is wrong!\n";
+            }
+
+            adminFile.close();
+        }
+    }
+}
+
+void mainMenu() {
+    string userInput;
+
+    cout << "MAIN MENU\n\n";
+    cout << "1.) Add a Voter \n2.) Remove a Voter \n3.) Update Voter's Name \n4.) Display Precincts \n5.) Start Voting \n6.) Exit\n\n";
+
+    cout << "Select from the Menu (1/2/3/4/5/6): ";
+    getline(cin, userInput);
+
+    if (isDigit(userInput)) {
+        switch (stoi(userInput)) {
+            case 1:
+                addVoter();
+
+                break;
+            case 2:
+                database(2, "");
+
+                break;
+            case 3:
+
+
+                break;
+            case 4:
+                database(3, "");
+
+                break;
+            case 5:
+
+                break;
+            case 6:
+
+                break;
+            default:
+                cout << "\nERROR: Invalid selection from the main menu!\n";
+        }
+    }
 }
 
 int main() {
-    // SETS UP THE SYSTEM...
-    loadFile();
-    
+    bool loggedIn;
 
+    // SETS UP THE SYSTEM...
+    clearScreen();
+    loadFile();
+    loggedIn = logIn();
+
+    while (loggedIn) {
+        clearScreen();
+
+        mainMenu();
+    }
 
     return EXIT_SUCCESS;
 }
