@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <map>
 
 using namespace std;
 
@@ -22,7 +23,7 @@ bool confirmValue(string value) {
     string reply;
 
     while (true) {
-        cout << "\n Is " << value << " correct? (Y/N): ";
+        cout << "\nIs " << value << " correct? (Y/N): ";
         getline(cin, reply);
 
         reply = toCapital(reply);
@@ -51,6 +52,63 @@ bool isDigit(string value) {
     }
 
     return true;
+}
+
+string getName() {
+    string lastName, firstName, middleName, fullName;
+
+    cout << "Enter last name: ";
+    getline(cin, lastName);
+    cout << "Enter first name: ";
+    getline(cin, firstName);
+    cout << "Enter middle name: ";
+    getline(cin, middleName);
+
+    fullName = lastName + ", " + firstName + " " + middleName;
+    fullName = toCapital(fullName);
+    
+    return fullName;
+}
+
+int getAge() {
+    string userInput;
+    bool correctData;
+
+    do {
+        cout << "Enter age: ";
+        getline(cin, userInput);
+
+    } while (!isDigit(userInput));
+
+    if (stoi(userInput) >= 18) {
+        return stoi(userInput);
+    }
+
+    return 0;
+}
+
+string getSex() {
+    string sex;
+    bool correctData = false;
+
+    do {
+        cout << "Enter sex (M/F): ";
+        getline(cin, sex);
+
+        sex = toCapital(sex);
+
+        if (sex == "MALE") {
+            sex = "M";
+        } else if (sex == "FEMALE") {
+            sex = "F";
+        }
+
+        if (sex == "M" || sex == "F") {
+            correctData = true;
+        }
+    } while (!correctData);
+
+    return sex;
 }
 
 void saveFile(vector<string> voters) {
@@ -122,6 +180,57 @@ string search(vector<string> voters) {
     return " ";
 }
 
+string search(map<string, string> candidates) {
+    vector<string> positions = {};
+
+    string name, userInput;
+    int ctr = 1;
+    bool found = false;
+
+    for (auto candidate : candidates) {
+        found = false;
+
+        for (int i = 0; i < positions.size(); i++) {
+            if (candidate.second == positions[i]) {
+                found = true;
+
+                break;
+            }
+        }
+
+        if (!found) {
+            positions.push_back(candidate.second);
+        }
+    }
+
+    cout << "SELECT POSITION\n\n";
+    for (string post : positions) {
+        cout << ctr << ".) " << post << endl;
+
+        ctr++;
+    }
+
+    do {
+        cout << "\nSelect the number from the options above: ";
+    } while (!isDigit(userInput));
+
+    userInput = positions[stoi(userInput) - 1];
+
+    ctr = 1;
+    for (auto candidate : candidates) {
+        if (candidate.second == userInput) {
+            cout << ctr << ".) " << candidate.first << endl;
+
+            ctr++;
+        }
+    }
+
+    cout << "Enter the name you want to remove (As seen above): ";
+    getline(cin, name);
+
+    // Searches for the name and returns true if found
+}
+
 int removeVoter(string indices) {
     vector <string> matchResults = {};
 
@@ -165,11 +274,12 @@ int removeVoter(string indices) {
 }
 
 // DATABASE
-void database(int action, string name) {
+void database(int action, string name, string address, string sex, int age) {
     static vector <string> voters = {};
 
     string userInput, indices;
     int index;
+    bool addedNew = false;
 
     switch (action) {
         case 0: // Sorts and Saves the list of voters into a file
@@ -180,6 +290,8 @@ void database(int action, string name) {
             break;
         case 1: // Loads/Adds voters name to the vector
             voters.push_back(name);
+
+            addedNew = true;
             
             break;
         case 2: // Removes voters
@@ -189,12 +301,41 @@ void database(int action, string name) {
             if (index >= 0) {
                 voters.erase(voters.begin() + index);
 
-                database(0, ""); // Sends a command for itself to sort and save the updated voters
+                database(0, "", "", "", 0); // Sends a command for itself to sort and save the updated voters
             }
 
             break;
         case 3: // Assigns voters to a precinct
             assignPrecinct(voters);
+
+            break;
+        default:
+            cout << "\nERROR: Invalid database action!\n";
+    }
+
+    if (addedNew) {
+        ofstream file(name + ".txt");
+
+        file << "NAME: " << name << "\nADDRESS: " << address << "\nSEX: " << sex << "\nAGE: " << age;
+        file.close();
+
+        addedNew = false;
+    }
+}
+
+void database(int action, string name, string position) {
+    static map<string, string> candidates = {};
+
+    switch (action) {
+        case 0: // Sorts and Saves the list of candidates into a file
+
+            break;
+        case 1: // Loads/Adds candidates name to the map
+            candidates.insert({name, position});
+            
+            break;
+        case 2: // Removes candidates
+            
 
             break;
         default:
@@ -210,38 +351,61 @@ void loadFile() {
         while (getline(list_of_voters, name)) {
             name = toCapital(name);
 
-            database(1, name);
+            database(1, name, "", "", 0);
         }
 
         list_of_voters.close();
 
-        database(0, ""); // Sends a command for the database to save the list of voters. This will overwrite the old file
+        database(0, "", "", "", 0); // Sends a command for the database to save the list of voters. This will overwrite the old file
     }
 }
 
-void addVoter() {
-    string lastName, firstName, middleName, fullName;
-    bool correctData;
+void addToDatabase(int action) {
+    string fullName, address, sex, position, data ,userInput;
+    int age;
+    bool correctData = false;
+
+    data = "";
 
     do {
         cout << "Please fill out the required information:\n";
-        
-        cout << "Enter last name: ";
-        getline(cin, lastName);
-        cout << "Enter first name: ";
-        getline(cin, firstName);
-        cout << "Enter middle name: ";
-        getline(cin, middleName);
 
-        fullName = lastName + ", " + firstName + " " + middleName;
-        fullName = toCapital(fullName);
+        fullName = getName();
+    
+        if (action == 1) { // For voters
+            cout << "Enter address: ";
+            getline(cin, address);
 
-        correctData = confirmValue(fullName);
+            age = getAge();
+
+            if (age <= 0) {
+                cout << "\nERROR: Minor detected!\n";
+
+                break;
+            }
+
+            sex = getSex();
+            data = "\nNAME: " + fullName + "\nADDRESS: " + address + "\nAGE: " + to_string(age) + "\nSEX: " + sex + "\n\n";
+        } else if (action == 2) { // For candidates
+            cout << "Enter position: ";
+            getline(cin, position);
+
+            position = toCapital(position);
+
+            data = "\nNAME: " + fullName + "\nPOSITION: " + position + "\n\n";
+        }
+        correctData = confirmValue(data);
     } while (!correctData);
 
     if (correctData) {
-        database(1, fullName); // Sends the name to the database
-        database(0, ""); // Auto-saves the list of names to immediately create a load file incase of crash
+        if (action == 1) {
+            database(1, fullName, address, sex, age); // Sends the name to the database
+            database(0, "", "", "", 0); // Auto-saves the list of names to immediately create a load file incase of crash
+        } else if (action == 2) {
+            database(1, fullName, position); // Same as here
+            database(0, "", "");
+        }
+        
     }
 }
 
@@ -291,11 +455,39 @@ bool logIn() {
     }
 }
 
-void mainMenu() {
+void toAdd() {
+    int action;
+    string userInput;
+
+    do {
+        cout << "SELECT WHAT TO ADD:\n";
+        cout << "1.) Voter \n2.) Candidate\n\n";
+
+        cout << "Enter the number from the options (1/2): ";
+        getline(cin, userInput);
+    } while (!isDigit(userInput));
+
+    switch (stoi(userInput)) {
+        case 1:
+            action = 1;
+
+            break;
+        case 2:
+            action = 2;
+
+            break;
+        default:
+            cout << "\nERROR: Invalid option!\n";
+    }
+
+    addToDatabase(action);
+}
+
+bool mainMenu() {
     string userInput;
 
     cout << "MAIN MENU\n\n";
-    cout << "1.) Add a Voter \n2.) Remove a Voter \n3.) Update Voter's Name \n4.) Display Precincts \n5.) Start Voting \n6.) Exit\n\n";
+    cout << "1.) Add a Voter/Candidate \n2.) Remove a Voter \n3.) Update Voter's Name \n4.) Display Precincts \n5.) Start Voting \n6.) Exit\n\n";
 
     cout << "Select from the Menu (1/2/3/4/5/6): ";
     getline(cin, userInput);
@@ -303,31 +495,34 @@ void mainMenu() {
     if (isDigit(userInput)) {
         switch (stoi(userInput)) {
             case 1:
-                addVoter();
+                toAdd();
 
                 break;
             case 2:
-                database(2, "");
+                database(2, "", "", "", 0);
 
                 break;
             case 3:
-
+                
 
                 break;
             case 4:
-                database(3, "");
+                database(3, "", "", "", 0);
 
                 break;
             case 5:
 
                 break;
             case 6:
+                return false;
 
                 break;
             default:
                 cout << "\nERROR: Invalid selection from the main menu!\n";
         }
     }
+
+    return true;
 }
 
 int main() {
@@ -341,7 +536,7 @@ int main() {
     while (loggedIn) {
         clearScreen();
 
-        mainMenu();
+        loggedIn = mainMenu();
     }
 
     return EXIT_SUCCESS;
