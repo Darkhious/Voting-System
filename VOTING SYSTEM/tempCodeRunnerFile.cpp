@@ -1,1 +1,0 @@
-cout << "Enter the number of the name you want to remove (0 to Cancel): ";
